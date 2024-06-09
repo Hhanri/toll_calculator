@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/Hhanri/toll_calculator/types"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -49,7 +51,16 @@ func (c *KafkaConsumer) readMessageLoop() {
 			continue
 		}
 
-		fmt.Println(msg)
-
+		var data types.ObuData
+		if err := json.Unmarshal(msg.Value, &data); err != nil {
+			fmt.Printf("JSON serialization error: %s\n", err)
+			continue
+		}
+		distance, err := c.calcService.CalculateDistance(data)
+		if err != nil {
+			fmt.Printf("Calculation error: %s\n", err)
+			continue
+		}
+		fmt.Printf("distance: %.2f\n", distance)
 	}
 }
