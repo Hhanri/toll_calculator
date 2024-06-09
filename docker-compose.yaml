@@ -1,35 +1,52 @@
 version: '3.9'
 
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - toll_calculator:/var/lib/zookeeper/data
+      - toll_calculator:/var/lib/zookeeper/log
+      - toll_calculator:/etc/zookeeper/secrets
+
   kafka:
+    image: confluentinc/cp-kafka:7.3.2
     container_name: kafka
-    image: bitnami/kafka:3.7.0
     ports:
       - 9092:9092
+      - 29092:29092
     volumes:
-      - toll:/bitnami
+      - toll_calculator:/var/lib/kafka/data
+      - toll_calculator:/etc/kafka/secrets
+    depends_on:
+      - zookeeper
     environment:
-      # KRaft settings
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      # Listeners
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
 
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - kafka
     ports:
-      - "8080:8080"
+      - 8080:8080
     environment:
-      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:29092
     volumes:
-      - toll:/bitnami/kafka-ui
+      - toll_calculator:/var/lib/kafka-ui
 
 volumes:
-  toll:
+  toll_calculator:
     driver: local
