@@ -12,10 +12,12 @@ import (
 var kafkaTopic string = "obu"
 
 func main() {
+	logger := NewLogrusLogger()
 	producer, err := NewKafkaProducer()
 	if err != nil {
 		log.Fatal(err)
 	}
+	producer = NewLogMiddleware(logger, producer)
 	receiver, err := NewDataReceiver(producer)
 	if err != nil {
 		log.Fatal(err)
@@ -56,7 +58,7 @@ func (dr *DataReceiver) wsReceiveLoop() {
 			continue
 		}
 
-		fmt.Printf("received OBU data from [%d] :: <lat %.3f | lng %.3f>\n", data.ObuId, data.Geo.Lat, data.Geo.Lng)
+		// fmt.Printf("received OBU data from [%d] :: <lat %.3f | lng %.3f>\n", data.ObuId, data.Geo.Lat, data.Geo.Lng)
 
 		if err := dr.produceData(data); err != nil {
 			log.Println("kafka produce error:", err)
