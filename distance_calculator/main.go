@@ -5,7 +5,8 @@ import "log"
 const topic = "obu"
 
 func main() {
-	consumer, err := NewKafkaConsumer(topic)
+	service := NewCalculatorService()
+	consumer, err := NewKafkaConsumer(topic, service)
 	if err != nil {
 		log.Fatal(err)
 	}

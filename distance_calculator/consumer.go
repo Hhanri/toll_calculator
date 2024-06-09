@@ -7,11 +7,12 @@ import (
 )
 
 type KafkaConsumer struct {
-	consumer  *kafka.Consumer
-	isRunning bool
+	consumer    *kafka.Consumer
+	isRunning   bool
+	calcService CalculatorServicer
 }
 
-func NewKafkaConsumer(topic string) (*KafkaConsumer, error) {
+func NewKafkaConsumer(topic string, service CalculatorServicer) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(
 		&kafka.ConfigMap{
 			"bootstrap.servers": "localhost",
@@ -27,8 +28,9 @@ func NewKafkaConsumer(topic string) (*KafkaConsumer, error) {
 	c.SubscribeTopics([]string{topic}, nil)
 
 	return &KafkaConsumer{
-		consumer:  c,
-		isRunning: true,
+		consumer:    c,
+		isRunning:   true,
+		calcService: service,
 	}, nil
 }
 
