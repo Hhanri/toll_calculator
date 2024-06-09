@@ -1,20 +1,22 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/Hhanri/toll_calculator/types"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/gorilla/websocket"
 )
 
 var kafkaTopic string = "obu"
 
 func main() {
-	receiver, err := NewDataReceiver()
+	producer, err := NewKafkaProducer()
+	if err != nil {
+		log.Fatal(err)
+	}
+	receiver, err := NewDataReceiver(producer)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,7 +29,7 @@ func main() {
 type DataReceiver struct {
 	msgCh chan types.ObuData
 	conn  *websocket.Conn
-	prod  *kafka.Producer
+	prod  DataProducer
 }
 
 func (dr *DataReceiver) handleWs(w http.ResponseWriter, r *http.Request) {
@@ -65,49 +67,12 @@ func (dr *DataReceiver) wsReceiveLoop() {
 }
 
 func (dr *DataReceiver) produceData(data types.ObuData) error {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	return dr.prod.Produce(
-		&kafka.Message{
-			TopicPartition: kafka.TopicPartition{
-				Topic:     &kafkaTopic,
-				Partition: kafka.PartitionAny,
-			},
-			Value: b,
-		},
-		nil,
-	)
-
+	return dr.prod.ProduceData(data)
 }
 
-func NewDataReceiver() (*DataReceiver, error) {
-	p, err := kafka.NewProducer(
-		&kafka.ConfigMap{
-			"bootstrap.servers": "localhost",
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		for e := range p.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
-				if ev.TopicPartition.Error != nil {
-					fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
-				} else {
-					fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
-				}
-			}
-		}
-	}()
-
+func NewDataReceiver(producer DataProducer) (*DataReceiver, error) {
 	return &DataReceiver{
 		msgCh: make(chan types.ObuData, 128),
-		prod:  p,
+		prod:  producer,
 	}, nil
 }
