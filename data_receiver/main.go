@@ -9,11 +9,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var kafkaTopic string = "obu"
-
 func main() {
+	var kafkaTopic string = "obu"
+
 	logger := NewLogrusLogger()
-	producer, err := NewKafkaProducer()
+	producer, err := NewKafkaProducer(kafkaTopic)
 	if err != nil {
 		log.Fatal(err)
 	}
