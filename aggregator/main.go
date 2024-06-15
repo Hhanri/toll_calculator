@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	listenAddr := flag.String("listenAddr", ":3000", "Listen Address")
+	listenAddr := flag.String("listenAddr", ":4000", "Listen Address")
 	flag.Parse()
 
 	logger := NewLogrusLogger()
@@ -24,7 +24,10 @@ func main() {
 func makeHttpTransport(listenAddr string, service Aggregator) {
 	fmt.Println("Http transport running on", listenAddr)
 	http.HandleFunc("/aggregate", handleAggregate(service))
-	http.ListenAndServe(listenAddr, nil)
+	err := http.ListenAndServe(listenAddr, nil)
+	if err != nil {
+		fmt.Printf("http listen and serve error: %s\n", err)
+	}
 }
 
 func handleAggregate(service Aggregator) http.HandlerFunc {
