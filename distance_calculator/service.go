@@ -14,7 +14,7 @@ type CalculatorService struct {
 	points map[int]types.Geo
 }
 
-func NewCalculatorService() *CalculatorService {
+func NewCalculatorService() CalculatorServicer {
 	return &CalculatorService{
 		points: make(map[int]types.Geo),
 	}

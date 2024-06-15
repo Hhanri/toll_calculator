@@ -56,11 +56,10 @@ func (c *KafkaConsumer) readMessageLoop() {
 			fmt.Printf("JSON serialization error: %s\n", err)
 			continue
 		}
-		distance, err := c.calcService.CalculateDistance(data)
+		_, err = c.calcService.CalculateDistance(data)
 		if err != nil {
 			fmt.Printf("Calculation error: %s\n", err)
 			continue
 		}
-		fmt.Printf("distance: %.2f\n", distance)
 	}
 }
