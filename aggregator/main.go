@@ -31,8 +31,23 @@ func handleAggregate(service Aggregator) http.HandlerFunc {
 		var distance types.Distance
 		err := json.NewDecoder(r.Body).Decode(&distance)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		if err := service.AggregateDistance(distance); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
 	}
+}
+
+func writeJson(w http.ResponseWriter, status int, v any) error {
+	w.WriteHeader(status)
+	w.Header().Add("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
+}
+
+func writeError(w http.ResponseWriter, status int, v error) error {
+	return writeJson(w, status, map[string]error{"error": v})
 }
