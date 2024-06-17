@@ -25,3 +25,11 @@ func (m *LogMiddleware) AggregateDistance(distance types.Distance) (err error) {
 	err = m.next.AggregateDistance(distance)
 	return
 }
+
+func (m *LogMiddleware) CalculateInvoice(id int) (invoice *types.Invoice, err error) {
+	defer func() {
+		m.logger.CalculateInvoice(err, time.Now(), id, invoice)
+	}()
+	invoice, err = m.next.CalculateInvoice(id)
+	return
+}
