@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/Hhanri/toll_calculator/types"
 )
@@ -24,9 +25,36 @@ func main() {
 func makeHttpTransport(listenAddr string, service Aggregator) {
 	fmt.Println("Http transport running on", listenAddr)
 	http.HandleFunc("/aggregate", handleAggregate(service))
+	http.HandleFunc("/invoice", handleInvoice(service))
 	err := http.ListenAndServe(listenAddr, nil)
 	if err != nil {
 		fmt.Printf("http listen and serve error: %s\n", err)
+	}
+}
+
+func handleInvoice(service Aggregator) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		values, ok := r.URL.Query()["obu"]
+		if !ok || len(values) < 1 {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("missing obu"))
+			return
+		}
+
+		obuId, err := strconv.Atoi(values[0])
+		if err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("invalid ObuId"))
+			return
+		}
+
+		invoice, err := service.CalculateInvoice(obuId)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		writeJson(w, http.StatusOK, invoice)
 	}
 }
 
